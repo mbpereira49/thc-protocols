@@ -1,16 +1,14 @@
-from protocols import Vertex, Protocol, Message, MessageList, Graph
-from protocols import aggregate
-from typing import List, Tuple
+from protocols import Protocol, Word, Message, MessageList, Graph
+from typing import List, Dict, Tuple
 
 class WheelGraph(Graph):
     def __init__(self, n):
         self.n = n
-        vertices = {f'{i}': Vertex(f'{i}') for i in range(1, n+1)}
-        vertices['center'] = Vertex('center')
-        edges = {vertices[f'{i}'] : [vertices[f'{j}'] for j in self._neighbors(i)] for i in range(1, n + 1)}
-        edges[vertices['center']] = [vertices[f'{j}'] for j in range(1, n+1)]
+        vertices = [f'{i}' for i in range(1, n+1)] + ['center']
+        edges = {f'{i}' : [f'{j}' for j in self._neighbors(i)] for i in range(1, n + 1)}
+        edges['center'] = [f'{j}' for j in range(1, n+1)]
 
-        super().__init__(list(vertices.values()), edges)
+        super().__init__(vertices, edges)
 
     def _neighbors(self, index):
         if index == 1:
@@ -20,66 +18,58 @@ class WheelGraph(Graph):
         else:
             return [index - 1, index + 1, 'center']
 
-def f(graph, vertex, messages) -> List[Tuple[Vertex, Vertex, Message]]:
-    total = sum([message for message in messages.values()], Message([]))
-
-    lst = []
-    for neighbor in graph.edges[vertex]:
-        message = total
-        if neighbor in messages:
-            message = message + messages[neighbor]
-        lst.append((vertex, neighbor, message))
+def f(graph: Graph, vertex: str, messages: Dict[str, Word]) -> List[Message]:
+    messages_sum = sum(messages.values(), Word())
     
-    return lst
+    # Return list of messages where each message is the aggregate sum message
+    # except with the one it received from that neighbor subtracted
+    return [Message(vertex, neighbor, messages_sum + messages[neighbor]) for neighbor in graph.edges[vertex]]
 
 graph = WheelGraph(5)
 
 protocol = Protocol(graph, f)
 
 from_center = [
-    (graph.vertices['center'], graph.vertices['1'], Message(['a'])),
-    (graph.vertices['center'], graph.vertices['2'], Message(['b'])),
-    (graph.vertices['center'], graph.vertices['3'], Message(['c'])),
-    (graph.vertices['center'], graph.vertices['4'], Message(['d'])),
-    (graph.vertices['center'], graph.vertices['5'], Message(['a', 'b', 'c', 'd', 'm'])),
+    Message('center', '1', Word(['a'])),
+    Message('center', '2', Word(['b'])),
+    Message('center', '3', Word(['c'])),
+    Message('center', '4', Word(['d'])),
+    Message('center', '5', Word(['a', 'b', 'c', 'd', 'm'])),
 ]
-
 from_1 = [
-    (graph.vertices['1'], graph.vertices['2'], Message(['x1'])),
-    (graph.vertices['1'], graph.vertices['center'], Message(['y1'])),
-    (graph.vertices['1'], graph.vertices['5'], Message(['x1', 'y1']))
+    Message('1', '2', Word(['x1'])),
+    Message('1', 'center', Word(['y1'])),
+    Message('1', '5', Word(['x1', 'y1']))
 ]
 from_2 = [
-    (graph.vertices['2'], graph.vertices['3'], Message(['x2'])),
-    (graph.vertices['2'], graph.vertices['center'], Message(['y2'])),
-    (graph.vertices['2'], graph.vertices['1'], Message(['x2', 'y2']))
+    Message('2', '3', Word(['x2'])),
+    Message('2', 'center', Word(['y2'])),
+    Message('2', '1', Word(['x2', 'y2']))
 ]
 from_3 = [
-    (graph.vertices['3'], graph.vertices['4'], Message(['x3'])),
-    (graph.vertices['3'], graph.vertices['center'], Message(['y3'])),
-    (graph.vertices['3'], graph.vertices['2'], Message(['x3', 'y3']))
+    Message('3', '4', Word(['x3'])),
+    Message('3', 'center', Word(['y3'])),
+    Message('3', '2', Word(['x3', 'y3']))
 ]
 from_4 = [
-    (graph.vertices['4'], graph.vertices['5'], Message(['x4'])),
-    (graph.vertices['4'], graph.vertices['center'], Message(['y4'])),
-    (graph.vertices['4'], graph.vertices['3'], Message(['x4', 'y4']))
+    Message('4', '5', Word(['x4'])),
+    Message('4', 'center', Word(['y4'])),
+    Message('4', '3', Word(['x4', 'y4']))
 ]
 from_5 = [
-    (graph.vertices['5'], graph.vertices['1'], Message(['x5'])),
-    (graph.vertices['5'], graph.vertices['center'], Message(['y5'])),
-    (graph.vertices['5'], graph.vertices['4'], Message(['x5', 'y5']))
+    Message('5', '1', Word(['x5'])),
+    Message('5', 'center', Word(['y5'])),
+    Message('5', '4', Word(['x5', 'y5']))
 ]
-initial_messages = MessageList(from_center + from_1 + from_2 + from_3 + from_4 + from_5)
+initial_messages = MessageList(from_center + from_1 + from_2 + from_3 + from_4 + from_5, graph)
 
 transcript = protocol.simulate(initial_messages, 6)
 
-aggregates = {vertex.name: 
-                [aggregate(view) 
-                for view in party_views] 
-            for vertex, party_views in transcript.party_view.items()}
-total_combined = {vertex: sum(messages, Message([])) for vertex, messages in aggregates.items()}
+def aggregate(incoming: Dict[str, Word]) -> Word:
+    return sum(incoming.values(), Word())
+
+aggregates = {vertex: [aggregate(round.incoming[vertex]) for round in transcript.rounds] for vertex in transcript.graph.vertices}
+total_combined = {vertex: sum(messages, Word()) for vertex, messages in aggregates.items()}
 print(total_combined)
 for vertex, messages in aggregates.items():
     print(vertex, messages)
-
-## Maybe need to fix message list so it contains every vertex in the graph whether or not it was sending/receiving. Would need graph info

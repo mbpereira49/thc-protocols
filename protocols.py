@@ -1,23 +1,13 @@
 from typing import List, Set, Dict, Tuple, Optional, Callable
 
-class Vertex:
-    def __init__(self, name: str):
-        self.name = name
-    
-    def __repr__(self):
-        return f"Vertex('{self.name}')"
-    
-    def __hash__(self):
-        return hash(self.name)
-
 class Graph:
-    def __init__(self, vertices: List[Vertex], edges : Dict[Vertex, List[Vertex]]):
-        self.vertices = {vertex.name : vertex for vertex in vertices}
+    def __init__(self, vertices: List[str], edges : Dict[str, List[str]]):
+        self.vertices = vertices
         self.edges = edges
-        # reconcile vertices with vertex_dict
 
-class Message:
-    def __init__(self, message: List[str]):
+# Class handling message content and its manipulation
+class Word:
+    def __init__(self, message: List[str] = []):
         self.message = self.reduce(message)
 
     def __repr__(self):
@@ -27,11 +17,11 @@ class Message:
         message1 = self.message
         message2 = other.message
         union = message1 + message2
-        return Message(union)
+        return Word(union)
     
     # Simplify a message (consisting of XOR'ed variables) by reducing each 
     # variable to be included once or not based on the parity of its occurrences
-    def reduce(self, expanded):
+    def reduce(self, expanded: List[str]):
         message = []
         counter = 0
         prev = ''
@@ -47,55 +37,43 @@ class Message:
         
         return message
 
-def aggregate(messages: Dict[Vertex, Message]) -> Message:
-    return sum(messages.values(), Message([]))
+# Wrapper class for a word (the content) and its sender/recipient
+class Message:
+    def __init__(self, sender: str, recipient: str, contents: Word):
+        self.sender = sender
+        self.recipient = recipient
+        self.contents = contents
     
 class MessageList:
-    def __init__(self, messages: List[Tuple[Vertex, Vertex, Message]]):
-        self.sending = dict()
-        self.receiving = dict()
+    def __init__(self, messages: List[Message], graph: Graph):
+        self.outgoing = {vertex: {neighbor: Word() for neighbor in graph.edges[vertex]} for vertex in graph.vertices}
+        self.incoming = {vertex: {neighbor: Word() for neighbor in graph.edges[vertex]} for vertex in graph.vertices}
+        self.graph = graph
         self.process_messages(messages)
 
-    def process_messages(self, messages: List[Tuple[Vertex, Vertex, Message]]):
-        for sender, recipient, message in messages:
-            self.add_message(self.sending, sender, recipient, message)
-            self.add_message(self.receiving, recipient, sender, message)
-
-    def add_message(self, d, index, other_party, message):
-        if index not in d:
-            d[index] = dict()
-        d[index][other_party] = message
-    
-    def combine_receiving(self):
-        combined = dict()
-        for recipient in self.receiving:
-            combined[recipient] = aggregate(self.receiving[recipient])
-        
-        return combined
+    def process_messages(self, messages: List[Message]):
+        for message in messages:
+            self.outgoing[message.sender][message.recipient] = message.contents
+            self.incoming[message.recipient][message.sender] = message.contents
 
 class Transcript:
     def __init__(self, graph: Graph):
         self.graph = graph
         self.rounds: List[MessageList] = []
-        self.party_view = {vertex : [] for vertex in graph.vertices.values()}
 
-    def add_round(self, outgoing: MessageList):
-        self.rounds.append(outgoing)
-        for vertex in self.graph.vertices.values():
-            messages = {}
-            if vertex in outgoing.receiving:
-                messages = outgoing.receiving[vertex]
-            self.party_view[vertex].append(messages)
+    def add_round(self, messages: MessageList):
+        self.rounds.append(messages)
 
 class Protocol:
-    def __init__(self, graph: Graph, forward_func: Callable[[Graph, Vertex, Dict[Vertex, Message]], List[Tuple[Vertex, Vertex, Message]]]):
+    def __init__(self, graph: Graph, forward_func: Callable[[Graph, str, Dict[str, Word]], List[Message]]):
         self.graph = graph
         self.forward_func = forward_func
 
-    def _forward(self, incoming: MessageList) -> MessageList:
-        outgoing = MessageList([])
-        for vertex, messages in incoming.receiving.items():
-            outgoing.process_messages(self.forward_func(self.graph, vertex, messages))
+    def _forward(self, messages: MessageList) -> MessageList:
+        outgoing = MessageList([], messages.graph)
+        for vertex in messages.incoming:
+            outgoing_messages = self.forward_func(self.graph, vertex, messages.incoming[vertex])
+            outgoing.process_messages(outgoing_messages)
         
         return outgoing
     
