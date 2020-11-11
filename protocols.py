@@ -45,7 +45,7 @@ class Message:
         self.contents = contents
     
 class MessageList:
-    def __init__(self, messages: List[Message], graph: Graph):
+    def __init__(self, graph: Graph, messages: List[Message] = []):
         self.outgoing = {vertex: {neighbor: Word() for neighbor in graph.edges[vertex]} for vertex in graph.vertices}
         self.incoming = {vertex: {neighbor: Word() for neighbor in graph.edges[vertex]} for vertex in graph.vertices}
         self.graph = graph
@@ -70,7 +70,7 @@ class Protocol:
         self.forward_func = forward_func
 
     def _forward(self, messages: MessageList) -> MessageList:
-        outgoing = MessageList([], messages.graph)
+        outgoing = MessageList(messages.graph)
         for vertex in messages.incoming:
             outgoing_messages = self.forward_func(self.graph, vertex, messages.incoming[vertex])
             outgoing.process_messages(outgoing_messages)
