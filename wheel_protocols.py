@@ -13,15 +13,23 @@ class WheelGraph(Graph):
     def _neighbors(self, index):
         return [(index - 1) % self.n, (index + 1) % self.n, 'center']
     
+    # Constructs a list of initial messages corresponding to the center party secret sharing
+    # some message among all its neighbors, and the outside parties secret sharing the zero message
+    # to its three neighbors
     def initial_messages(self):
-        ORD_A = ord('a')
         message_list = MessageList(self)
-        from_center = [Message('center', str(i), Word([chr(ORD_A + i)])) for i in range(self.n - 1)]
-        from_center += [Message('center', str(self.n - 1), Word([chr(ORD_A + i) for i in range(self.n - 1)] + ['message']))]
+
+        # Center sends a different letter of the alphabet to all its neighbors, except for one neighbor,
+        # who receives the XOR of all the other messages plus the message
+        from_center = [Message('center', str(i), Word([chr(ord('a') + i)])) for i in range(self.n - 1)]
+        from_center += [Message('center', str(self.n - 1), Word([chr(ord('a') + i) for i in range(self.n - 1)] + ['message']))]
 
         message_list.process_messages(from_center)
 
         for i in range(self.n):
+            # Each party sends to its three neighbors the messages 
+            #   [x_i + y_i], [y_i + z_i], [x_i + z_i]
+            # which add up to 0 
             messages = [
                 Message(str(i), str((i - 1) % self.n), Word(['x' + str(i), 'y' + str(i)])),
                 Message(str(i), str((i + 1) % self.n), Word(['y' + str(i), 'z' + str(i)])),
@@ -31,10 +39,12 @@ class WheelGraph(Graph):
         
         return message_list
 
-
+# Implementation of a forwarding function, corresponding to the protocol
+# where each party forwards to each neighbor the sum of the messages it received
+# except for the message from that neighbor
 def forward_impl(graph: Graph, vertex: str, messages: Dict[str, Word]) -> List[Message]:
     messages_sum = sum(messages.values(), Word())
 
     # Return list of messages where each message is the aggregate sum message
-    # except with the one it received from that neighbor subtracted
+    # with the one it received from that neighbor subtracted
     return [Message(vertex, neighbor, messages_sum + messages[neighbor]) for neighbor in graph.edges[vertex]]

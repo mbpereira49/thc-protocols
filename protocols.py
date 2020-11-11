@@ -5,7 +5,10 @@ class Graph:
         self.vertices = vertices
         self.edges = edges
 
-# Class handling message content and its manipulation
+# Class handling message content and its manipulation.
+# A word consists of a list of strings, which we treat as 
+# variables being XOR'ed.
+# Example: Word(['a', 'b']) := a \oplus b
 class Word:
     def __init__(self, message: List[str] = []):
         self.message = self.reduce(message)
@@ -13,6 +16,7 @@ class Word:
     def __repr__(self):
         return str(self.message)
     
+    # Defines the sum of two messages to be their XOR
     def __add__(self, other):
         message1 = self.message
         message2 = other.message
@@ -43,7 +47,10 @@ class Message:
         self.sender = sender
         self.recipient = recipient
         self.contents = contents
-    
+
+# Class to organize all the messages sent in a round.
+# Contains dictionaries 'outgoing' and 'incoming' to index all 
+# the messages being sent from or sent to a particular vertex
 class MessageList:
     def __init__(self, graph: Graph, messages: List[Message] = []):
         self.outgoing = {vertex: {neighbor: Word() for neighbor in graph.edges[vertex]} for vertex in graph.vertices}
@@ -56,6 +63,7 @@ class MessageList:
             self.outgoing[message.sender][message.recipient] = message.contents
             self.incoming[message.recipient][message.sender] = message.contents
 
+# Class to organize all communications sent over several rounds of a protocol
 class Transcript:
     def __init__(self, graph: Graph):
         self.graph = graph
@@ -69,6 +77,7 @@ class Protocol:
         self.graph = graph
         self.forward_func = forward_func
 
+    # Forwards the messages for a single round using forward_func
     def _forward(self, messages: MessageList) -> MessageList:
         outgoing = MessageList(messages.graph)
         for vertex in messages.incoming:

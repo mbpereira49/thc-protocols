@@ -2,7 +2,6 @@ from protocols import Word, Message, MessageList, Protocol
 from wheel_protocols import WheelGraph, forward_impl
 from typing import Dict
 
-
 graph = WheelGraph(5)
 protocol = Protocol(graph, forward_impl)
 
@@ -30,9 +29,3 @@ for vertex, messages in aggregates.items():
     print(vertex, messages)
 
 print({vertex: messages[0] + messages[-1] for vertex, messages in aggregates.items()})
-
-# 5 -> 4
-# 7 -> 8
-# 9 -> 8, 15
-# 11 -> 32
-# 13 -> 64
