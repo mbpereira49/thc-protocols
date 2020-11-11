@@ -77,13 +77,13 @@ class Protocol:
         
         return outgoing
     
-    # Forward the messages num_rounds - 1 times (since the initial messages consitute a round)
+    # Forward the messages num_rounds times
     def simulate(self, initial: MessageList, num_rounds: int) -> Transcript:
         transcript = Transcript(self.graph)
         transcript.add_round(initial)
 
         messages = initial
-        for _ in range(num_rounds - 1):
+        for _ in range(num_rounds):
             messages = self._forward(messages)
             transcript.add_round(messages)
         

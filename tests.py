@@ -20,12 +20,11 @@ aggregates = {vertex: [aggregate(round.incoming[vertex]) for round in transcript
 
 print({vertex: messages[0] + messages[-1] for vertex, messages in aggregates.items()})
 
-# 3 -> 2 + 1*k
-# 5 -> 4 + 3*k
-# 7 -> 8 + 7*k
-# 9 -> 8 + 7*k
-# 11 -> 32 + 31*k
-# 13 -> 64 + 63*k
-# 15 -> 16 + 15*k
-# 17 -> 256?
-# 21 -> 64?
+# for k >= 1:
+# 3 -> 1*k
+# 5 -> 3*k
+# 7 -> 7*k
+# 9 -> 7*k
+# 11 -> 31*k
+# 13 -> 63*k
+# 15 -> 15*k
