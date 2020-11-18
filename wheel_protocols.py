@@ -42,9 +42,18 @@ class WheelGraph(Graph):
 # Implementation of a forwarding function, corresponding to the protocol
 # where each party forwards to each neighbor the sum of the messages it received
 # except for the message from that neighbor
-def forward_impl(graph: Graph, vertex: str, messages: Dict[str, Word]) -> List[Message]:
+def forward_others(graph: Graph, vertex: str, messages: Dict[str, Word]) -> List[Message]:
     messages_sum = sum(messages.values(), Word())
 
     # Return list of messages where each message is the aggregate sum message
     # with the one it received from that neighbor subtracted
     return [Message(vertex, neighbor, messages_sum + messages[neighbor]) for neighbor in graph.edges[vertex]]
+
+# Implementation of a forwarding function, corresponding to the protocol
+# where each party forwards to each neighbor the sum of the messages it received
+def forward_all(graph: Graph, vertex: str, messages: Dict[str, Word]) -> List[Message]:
+    messages_sum = sum(messages.values(), Word())
+
+    # Return list of messages where each message is the aggregate sum message
+    # with the one it received from that neighbor subtracted
+    return [Message(vertex, neighbor, messages_sum) for neighbor in graph.edges[vertex]]

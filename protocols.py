@@ -5,6 +5,22 @@ class Graph:
         self.vertices = vertices
         self.edges = edges
 
+        self.vertex_to_index = {vertex: i for i, vertex in enumerate(self.vertices)}
+        self.index_to_vertex = {i : vertex for vertex, i in enumerate(self.vertex_to_index)}
+
+        self.adjacency_matrix = self._get_adjacency_matrix()
+    
+    def _get_adjacency_matrix(self):
+        n = len(self.vertices)
+        matrix = [[0 for i in range(n)] for j in range(n)]
+        for vertex in self.vertices:
+            for neighbor in self.edges[vertex]:
+                i, j = self.vertex_to_index[vertex], self.vertex_to_index[neighbor]
+                matrix[i][j] = 1
+        
+        return matrix
+
+
 # Class handling message content and its manipulation.
 # A word consists of a list of strings, which we treat as 
 # variables being XOR'ed.
@@ -14,7 +30,7 @@ class Word:
         self.message = self.reduce(message)
 
     def __repr__(self):
-        return str(self.message)
+        return ' + '.join(self.message)
     
     # Defines the sum of two messages to be their XOR
     def __add__(self, other):
