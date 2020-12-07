@@ -21,8 +21,8 @@ class WheelGraph(Graph):
 
         # Center sends a different letter of the alphabet to all its neighbors, except for one neighbor,
         # who receives the XOR of all the other messages plus the message
-        from_center = [Message('center', str(i), Word([chr(ord('a') + i)])) for i in range(self.n - 1)]
-        from_center += [Message('center', str(self.n - 1), Word([chr(ord('a') + i) for i in range(self.n - 1)] + ['message']))]
+        from_center = [Message('center', str(i), Word(['x' + str(i)])) for i in range(self.n)]
+        #from_center += [Message('center', str(self.n - 1), Word([chr(ord('a') + i) for i in range(self.n - 1)] + ['message']))]
 
         message_list.process_messages(from_center)
 
@@ -30,10 +30,15 @@ class WheelGraph(Graph):
             # Each party sends to its three neighbors the messages 
             #   [x_i + y_i], [y_i + z_i], [x_i + z_i]
             # which add up to 0 
-            messages = [
+            """ messages = [
                 Message(str(i), str((i - 1) % self.n), Word(['x' + str(i), 'y' + str(i)])),
                 Message(str(i), str((i + 1) % self.n), Word(['y' + str(i), 'z' + str(i)])),
                 Message(str(i), 'center', Word(['x' + str(i), 'z' + str(i)]))
+            ] """
+            messages = [
+                Message(str(i), str((i + 1) % self.n), Word(['a' + str(i)])),
+                Message(str(i), str((i - 1) % self.n), Word(['b' + str(i)])),
+                Message(str(i), 'center', Word(['c' + str(i)]))
             ]
             message_list.process_messages(messages)
         
